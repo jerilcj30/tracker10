@@ -1,0 +1,619 @@
+basePath: /
+definitions:
+  affiliatenetworks.Request:
+    properties:
+      AffiliateNetworkName:
+        type: string
+    required:
+    - AffiliateNetworkName
+    type: object
+  affiliatenetworks.Response:
+    properties:
+      AffiliateNetworkName:
+        type: string
+      Id:
+        type: integer
+    required:
+    - AffiliateNetworkName
+    - Id
+    type: object
+  campaigns.Request:
+    properties:
+      CampaignCPC:
+        type: integer
+      CampaignCountry:
+        type: string
+      CampaignFlow:
+        type: integer
+      CampaignName:
+        type: string
+      CampaignTrackingDomain:
+        type: integer
+      CampaignTrafficSource:
+        type: integer
+      CampaignUUID:
+        type: string
+    required:
+    - CampaignCPC
+    - CampaignCountry
+    - CampaignFlow
+    - CampaignName
+    - CampaignTrackingDomain
+    - CampaignTrafficSource
+    - CampaignUUID
+    type: object
+  campaigns.Response:
+    properties:
+      CampaignCPC:
+        type: integer
+      CampaignConversions:
+        type: integer
+      CampaignCountry:
+        type: string
+      CampaignDaysLapsed:
+        type: number
+      CampaignEPC:
+        type: integer
+      CampaignHoursLapsed:
+        type: number
+      CampaignImpressions:
+        type: integer
+      CampaignName:
+        type: string
+      CampaignProfit:
+        type: integer
+      CampaignROI:
+        type: integer
+      CampaignRevenue:
+        type: integer
+      CampaignTotalCost:
+        type: integer
+      CampaignTrafficSource:
+        type: string
+      CampaignUUID:
+        type: string
+      CampaignUniqueImpressions:
+        type: integer
+    required:
+    - CampaignCPC
+    - CampaignConversions
+    - CampaignCountry
+    - CampaignDaysLapsed
+    - CampaignEPC
+    - CampaignHoursLapsed
+    - CampaignImpressions
+    - CampaignName
+    - CampaignProfit
+    - CampaignROI
+    - CampaignRevenue
+    - CampaignTotalCost
+    - CampaignTrafficSource
+    - CampaignUUID
+    - CampaignUniqueImpressions
+    type: object
+  flows.Request:
+    properties:
+      attributes:
+        additionalProperties: true
+        description: key will always be string and value can be int, float etc
+        type: object
+      children:
+        items:
+          $ref: '#/definitions/flows.Request'
+        type: array
+      name:
+        type: string
+    type: object
+  flows.Response:
+    properties:
+      FlowNodeId:
+        type: string
+      Id:
+        type: integer
+    required:
+    - FlowNodeId
+    - Id
+    type: object
+  landers.Request:
+    properties:
+      LanderName:
+        type: string
+      LanderURL:
+        type: string
+    required:
+    - LanderName
+    - LanderURL
+    type: object
+  landers.Response:
+    properties:
+      Id:
+        type: integer
+      LanderName:
+        type: string
+    required:
+    - Id
+    - LanderName
+    type: object
+  offers.Request:
+    properties:
+      OfferAffiliateNetwork:
+        type: integer
+      OfferName:
+        type: string
+      OfferPayout:
+        type: integer
+      OfferURL:
+        type: string
+    required:
+    - OfferAffiliateNetwork
+    - OfferName
+    - OfferPayout
+    - OfferURL
+    type: object
+  offers.Response:
+    properties:
+      Id:
+        type: integer
+      OfferName:
+        type: string
+    required:
+    - Id
+    - OfferName
+    type: object
+  trafficsources.Request:
+    properties:
+      TrafficSourceName:
+        type: string
+    required:
+    - TrafficSourceName
+    type: object
+  trafficsources.Response:
+    properties:
+      Id:
+        type: integer
+      TrafficSourceName:
+        type: string
+    required:
+    - Id
+    - TrafficSourceName
+    type: object
+  trafficsourcetokens.Request:
+    properties:
+      Tokens:
+        items:
+          $ref: '#/definitions/trafficsourcetokens.Token'
+        type: array
+      TrafficSourceName:
+        type: integer
+    required:
+    - TrafficSourceName
+    type: object
+  trafficsourcetokens.Token:
+    properties:
+      TrafficSourceTokenName:
+        type: string
+      TrafficSourceTokenParam:
+        type: string
+      TrafficSourceTokenQuery:
+        type: string
+    required:
+    - TrafficSourceTokenName
+    - TrafficSourceTokenParam
+    - TrafficSourceTokenQuery
+    type: object
+host: localhost:4000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Api routes for Affiliate tracker
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Affiliate tracker
+  version: "1.0"
+paths:
+  /affiliatenetworks:
+    post:
+      consumes:
+      - application/json
+      description: Create an affiliate network
+      parameters:
+      - description: affiliateNetwork data
+        in: body
+        name: affiliateNetwork
+        required: true
+        schema:
+          $ref: '#/definitions/affiliatenetworks.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: affiliateNetwork created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create an affiliate network
+      tags:
+      - Affiliate Networks
+  /affiliatenetworks/affiliatenetworkids:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of all affiliate network ids
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of affiliate networks ids
+          schema:
+            items:
+              $ref: '#/definitions/affiliatenetworks.Response'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get the list of all affiliate network ids
+      tags:
+      - Affiliate Networks
+  /campaigns:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of all campaigns
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        format: yyyy-MM-dd
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        format: yyyy-MM-dd
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of campaigns
+          schema:
+            items:
+              $ref: '#/definitions/campaigns.Response'
+            type: array
+        "400":
+          description: Bad requesr
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get the list of all campaigns
+      tags:
+      - Campaigns
+    post:
+      consumes:
+      - application/json
+      description: Create a campaign
+      parameters:
+      - description: Campaign data
+        in: body
+        name: campaign
+        required: true
+        schema:
+          $ref: '#/definitions/campaigns.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Campaign created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a campaign
+      tags:
+      - Campaigns
+  /campaigns/generatecampaignurl:
+    get:
+      consumes:
+      - application/json
+      description: Generate the campaign url
+      parameters:
+      - description: ptKhRKgMdzt
+        in: query
+        name: campaign_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: campaign url
+          schema:
+            type: string
+        "400":
+          description: Bad requesr
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Generate the campaign url
+      tags:
+      - Campaigns
+  /flows:
+    post:
+      consumes:
+      - application/json
+      description: Create a flow
+      parameters:
+      - description: flow data
+        in: body
+        name: flow
+        required: true
+        schema:
+          $ref: '#/definitions/flows.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Flow created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a flow
+      tags:
+      - Flows
+  /flows/flowids:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of all flow ids
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of flow ids
+          schema:
+            items:
+              $ref: '#/definitions/flows.Response'
+            type: array
+        "400":
+          description: Bad requesr
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get the list of all flow ids
+      tags:
+      - Flows
+  /landers:
+    post:
+      consumes:
+      - application/json
+      description: Create a lander
+      parameters:
+      - description: lander data
+        in: body
+        name: lander
+        required: true
+        schema:
+          $ref: '#/definitions/landers.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: lander created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a lander
+      tags:
+      - Landers
+  /landers/landerids:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of all lander ids
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of lander ids
+          schema:
+            items:
+              $ref: '#/definitions/landers.Response'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get the list of all lander ids
+      tags:
+      - Landers
+  /offers:
+    post:
+      consumes:
+      - application/json
+      description: Create an offer
+      parameters:
+      - description: offer data
+        in: body
+        name: offer
+        required: true
+        schema:
+          $ref: '#/definitions/offers.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Offer created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create an offer
+      tags:
+      - Offers
+  /offers/offerids:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of all offer ids
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of offer ids
+          schema:
+            items:
+              $ref: '#/definitions/offers.Response'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get the list of all offer ids
+      tags:
+      - Offers
+  /trafficsources:
+    post:
+      consumes:
+      - application/json
+      description: Create a trafficsource
+      parameters:
+      - description: trafficsource data
+        in: body
+        name: trafficsource
+        required: true
+        schema:
+          $ref: '#/definitions/trafficsources.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trafficsource created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a trafficsource
+      tags:
+      - Trafficsources
+  /trafficsources/trafficsourceids:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of all trafficsource ids
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of trafficsource ids
+          schema:
+            items:
+              $ref: '#/definitions/trafficsources.Response'
+            type: array
+        "400":
+          description: Bad requesr
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get the list of all trafficsource ids
+      tags:
+      - Trafficsources
+  /trafficsourcetokens:
+    post:
+      consumes:
+      - application/json
+      description: Create a trafficsource token
+      parameters:
+      - description: trafficsource token data
+        in: body
+        name: trafficsourcetoken
+        required: true
+        schema:
+          $ref: '#/definitions/trafficsourcetokens.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trafficsource token created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a trafficsource token
+      tags:
+      - Trafficsourcetokens
+swagger: "2.0"

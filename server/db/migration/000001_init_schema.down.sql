@@ -1,0 +1,16 @@
+-- drop table demo;
+DROP TABLE IF EXISTS browser;
+DROP TABLE IF EXISTS conversion;
+DROP TABLE IF EXISTS device;
+DROP TABLE IF EXISTS device_attribute;
+DROP TABLE IF EXISTS geo_location;
+DROP TABLE IF EXISTS os;
+DROP TABLE IF EXISTS traffic_source_token;
+DROP TABLE IF EXISTS lander;
+DROP TABLE IF EXISTS offer;
+DROP TABLE IF EXISTS hit_query_string;
+DROP TABLE IF EXISTS hit;
+DROP TABLE IF EXISTS affiliate_network;
+DROP TABLE IF EXISTS campaign;
+DROP TABLE IF EXISTS traffic_source;
+DROP TABLE IF EXISTS flow;
