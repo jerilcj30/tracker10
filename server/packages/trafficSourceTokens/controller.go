@@ -13,8 +13,8 @@ type TrafficSourceTokensHandler struct {
 // structure of the schema
 type Token struct {
 	TrafficSourceTokenName  string `json:"TrafficSourceTokenName" validate:"required"`
-	TrafficSourceTokenParam string `json:"TrafficSourceTokenParam" validate:"required"`
 	TrafficSourceTokenQuery string `json:"TrafficSourceTokenQuery" validate:"required"`
+	TrafficSourceTokenParam string `json:"TrafficSourceTokenParam" validate:"required"`
 }
 
 // Structure for the data passed from the client

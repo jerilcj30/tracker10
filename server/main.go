@@ -14,6 +14,7 @@ import (
 	campaigns "github.com/jerilcj30/tracker10/packages/campaigns"
 	demo "github.com/jerilcj30/tracker10/packages/demos"
 	"github.com/jerilcj30/tracker10/packages/flows"
+	"github.com/jerilcj30/tracker10/packages/hits"
 	"github.com/jerilcj30/tracker10/packages/landers"
 	"github.com/jerilcj30/tracker10/packages/offers"
 	trafficsourcetokens "github.com/jerilcj30/tracker10/packages/trafficSourceTokens"
@@ -105,6 +106,9 @@ func main() {
 	// trafficsourcetokens routes
 	r.Mount("/trafficsourcetokens", TrafficSourceTokensRoutes(db))
 
+	// hits routes
+	r.Mount("/hits", HitsRoutes(db))
+
 	http.ListenAndServe(config.ServerAddress, r)
 
 }
@@ -192,6 +196,18 @@ func TrafficSourceTokensRoutes(db *sql.DB) chi.Router {
 	}
 
 	r.Post("/", trafficSourceTokensHandler.PostHandler)
+	return r
+}
+
+func HitsRoutes(db *sql.DB) chi.Router {
+	r := chi.NewRouter()
+
+	hitsHandler := hits.HitsHandler{
+		DB: db,
+	}
+
+	r.Get("/", hitsHandler.GetHitsHandler)
+
 	return r
 }
 

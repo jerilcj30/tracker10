@@ -77,6 +77,7 @@ func getCampaigns(db *sql.DB, from string, to string) ([]Response, error) {
 	((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid)) AS profit,
 	CASE
         WHEN (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) = 0 THEN 0
+		WHEN (SELECT COUNT(id) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid) =0 THEN 0
         ELSE
             (((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT COUNT(id) * c.campaign_cpc FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid)) /
             (SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id)) * 100

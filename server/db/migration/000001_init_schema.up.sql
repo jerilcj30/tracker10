@@ -76,6 +76,7 @@ CREATE TABLE "hit" (
 
 CREATE TABLE "hit_query_string" (
   "id" bigserial PRIMARY KEY,
+  "hit_id" bigint,
   "hit_query_string_key" varchar NOT NULL,
   "hit_query_string_value" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
@@ -147,6 +148,8 @@ ALTER TABLE "campaign" ADD FOREIGN KEY ("campaign_traffic_source") REFERENCES "t
 ALTER TABLE "campaign" ADD FOREIGN KEY ("campaign_flow") REFERENCES "flow" ("id");
 
 ALTER TABLE "hit" ADD FOREIGN KEY ("hit_campaign_id") REFERENCES "campaign" ("id");
+
+ALTER TABLE "hit_query_string" ADD FOREIGN KEY ("hit_id") REFERENCES "hit" ("id");
 
 ALTER TABLE "conversion" ADD FOREIGN KEY ("conversion_campaign_uuid") REFERENCES "campaign" ("campaign_uuid");
 

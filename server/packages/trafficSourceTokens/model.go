@@ -21,8 +21,9 @@ func insertToDB(db *sql.DB, data Request) error {
 		err := db.QueryRow(query,
 			data.TrafficSourceName,
 			schema.TrafficSourceTokenName,
+			schema.TrafficSourceTokenQuery,
 			schema.TrafficSourceTokenParam,
-			schema.TrafficSourceTokenQuery).Scan(&lastInsertedID)
+		).Scan(&lastInsertedID)
 
 		if err != nil {
 			// Handle the error, log it, etc.

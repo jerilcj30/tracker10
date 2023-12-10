@@ -198,7 +198,7 @@ export function TokenForm() {
                       <FormControl>
                         <Input
                           className="w-40"
-                          placeholder="query e.g. Zone ID"
+                          placeholder="name e.g. Zone ID"
                           {...field}
                         />
                       </FormControl>
@@ -216,7 +216,7 @@ export function TokenForm() {
                       <FormControl>
                         <Input
                           className="w-40"
-                          placeholder="token e.g. zone_id"
+                          placeholder="param e.g. zone_id"
                           {...field}
                         />
                       </FormControl>
@@ -234,7 +234,7 @@ export function TokenForm() {
                       <FormControl>
                         <Input
                           className="w-40"
-                          placeholder="name e.g. {zone_id}"
+                          placeholder="query e.g. {zone_id}"
                           {...field}
                         />
                       </FormControl>
