@@ -14,8 +14,6 @@ import {
 // You can use a Zod schema here if you want.
 export type Payment = {
   hit_session_id: string
-  total_landers: number
-  total_offers: number
   total_impressions: number
   unique_impressions: number
   conversions: number
@@ -57,14 +55,7 @@ export const columns: ColumnDef<Payment>[] = [
     accessorKey: "hit_session_id",
     header: "Sessions",
   },
-  {
-    accessorKey: "total_landers",
-    header: "Total Landers",
-  },
-  {
-    accessorKey: "total_offers",
-    header: "Total Offers",
-  },
+ 
   {
     accessorKey: "impressions",
     header: "Impressions",

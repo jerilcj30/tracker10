@@ -18,6 +18,7 @@ import { getcampaignURL } from "../../api/apiCampaigns";
 export type Headers = {
   CampaignUUID: string;
   CampaignName: string;
+  CampaignFlowID: string;
   CampaignTrafficSource: string;
   CampaignCountry: string;
   CampaignCPC: number;
@@ -105,6 +106,27 @@ export const columns: ColumnDef<Headers>[] = [
       return (
         <div className="text-center font-medium">
           {row.getValue("CampaignName")}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "CampaignFlowID",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Campaign Flow
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="text-center font-medium">
+          {row.getValue("CampaignFlowID")}
         </div>
       );
     },
