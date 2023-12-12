@@ -65,6 +65,10 @@ func main() {
 	// logger
 	r.Use(middleware.Logger)
 
+	// Real ip
+
+	r.Use(middleware.RealIP)
+
 	// Basic CORS
 
 	r.Use(cors.Handler(cors.Options{

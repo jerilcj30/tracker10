@@ -86,55 +86,32 @@ CREATE TABLE "hit_query_string" (
 CREATE TABLE "conversion" (
   "id" bigserial PRIMARY KEY,
   "conversion_value" bigint NOT NULL,
-  "conversion_campaign_uuid" varchar,
+  "conversion_campaign_id" bigint,
   "conversion_hit_id" bigint,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "created_date" date NOT NULL DEFAULT (now())
 );
 
-CREATE TABLE "browser" (
+CREATE TABLE "metric" (
   "id" bigserial PRIMARY KEY,
-  "browser_family" varchar NOT NULL,
-  "browser_version_string" varchar NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "created_date" date NOT NULL DEFAULT (now())
-);
-
-CREATE TABLE "os" (
-  "id" bigserial PRIMARY KEY,
-  "os_name" varchar NOT NULL,
-  "os_version_string" varchar NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "created_date" date NOT NULL DEFAULT (now())
-);
-
-CREATE TABLE "device" (
-  "id" bigserial PRIMARY KEY,
-  "device_family" varchar NOT NULL,
-  "device_brand" varchar NOT NULL,
-  "device_model" varchar NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "created_date" date NOT NULL DEFAULT (now())
-);
-
-CREATE TABLE "device_attribute" (
-  "id" bigserial PRIMARY KEY,
-  "device_attribute_model" varchar NOT NULL,
-  "device_attribute_mobile" varchar NOT NULL,
-  "device_attribute_tablet" varchar NOT NULL,
-  "device_attribute_touch_capable" varchar NOT NULL,
-  "device_attribute_pc" varchar NOT NULL,
-  "device_attribute_bot" varchar NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "created_date" date NOT NULL DEFAULT (now())
-);
-
-CREATE TABLE "geo_location" (
-  "id" bigserial PRIMARY KEY,
-  "geo_location_country" varchar NOT NULL,
-  "geo_location_state" varchar NOT NULL,
-  "geo_location_city" varchar NOT NULL,
-  "geo_location_ip_address" varchar NOT NULL,
+  "metrics_hit_id" bigint,
+  "metrics_campaign_id" bigint,
+  "referrer" varchar,
+  "browser_name" varchar,
+  "browser_version" varchar,
+  "os" varchar,
+  "os_version" varchar,
+  "device" varchar,
+  "is_mobile" boolean,
+  "is_tablet" boolean,
+  "is_desktop" boolean,
+  "is_bot" boolean,
+  "url" varchar,
+  "postal_code" varchar,
+  "city" varchar,
+  "state" varchar,
+  "country" varchar,
+  "continent" varchar,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "created_date" date NOT NULL DEFAULT (now())
 );
@@ -151,6 +128,10 @@ ALTER TABLE "hit" ADD FOREIGN KEY ("hit_campaign_id") REFERENCES "campaign" ("id
 
 ALTER TABLE "hit_query_string" ADD FOREIGN KEY ("hit_id") REFERENCES "hit" ("id");
 
-ALTER TABLE "conversion" ADD FOREIGN KEY ("conversion_campaign_uuid") REFERENCES "campaign" ("campaign_uuid");
+ALTER TABLE "conversion" ADD FOREIGN KEY ("conversion_campaign_id") REFERENCES "campaign" ("id");
 
 ALTER TABLE "conversion" ADD FOREIGN KEY ("conversion_hit_id") REFERENCES "hit" ("id");
+
+ALTER TABLE "metric" ADD FOREIGN KEY ("metrics_hit_id") REFERENCES "hit" ("id");
+
+ALTER TABLE "metric" ADD FOREIGN KEY ("metrics_campaign_id") REFERENCES "campaign" ("id");

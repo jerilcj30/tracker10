@@ -25,6 +25,7 @@ type Request struct {
 type Response struct {
 	CampaignUUID              string  `json:"CampaignUUID" validate:"required"`
 	CampaignName              string  `json:"CampaignName" validate:"required"`
+	CampaignFlowID            string  `json:"CampaignFlowID" validate:"required"`
 	CampaignTrafficSource     string  `json:"CampaignTrafficSource" validate:"required"`
 	CampaignCountry           string  `json:"CampaignCountry" validate:"required"`
 	CampaignCPC               int     `json:"CampaignCPC" validate:"required"`

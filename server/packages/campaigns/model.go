@@ -66,29 +66,30 @@ func getCampaigns(db *sql.DB, from string, to string) ([]Response, error) {
 	SELECT
     c.campaign_uuid,
     c.campaign_name,
+	(SELECT flow_node_id FROM flow WHERE flow.id = c.campaign_flow) AS flow_node_id,
     t.traffic_source_name AS campaign_traffic_source,
     c.campaign_country,
     c.campaign_cpc AS cpc,
-	(SELECT count(id) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid) AS conversions,
+	(SELECT count(id) FROM conversion WHERE conversion_campaign_id = c.id) AS conversions,
     (SELECT COUNT(id) FROM hit WHERE hit_campaign_id = c.id) AS impressions,
     (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) AS unique_impressions,	
 	(SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) AS total_cost,
-	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid) AS revenue,
-	((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid)) AS profit,
+	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_id = c.id) AS revenue,
+	((SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_id = c.id) - (SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id)) AS profit,
 	CASE
         WHEN (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) = 0 THEN 0
-		WHEN (SELECT COUNT(id) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid) =0 THEN 0
+		WHEN (SELECT COUNT(id) FROM conversion WHERE conversion_campaign_id = c.id) =0 THEN 0
         ELSE
-            (((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT COUNT(id) * c.campaign_cpc FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid)) /
+            (((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT COUNT(id) * c.campaign_cpc FROM conversion WHERE conversion_campaign_id = c.id)) /
             (SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id)) * 100
     END AS roi,
 	CASE
     	WHEN (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) = 0 THEN 0
     	ELSE
-        	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_uuid = c.campaign_uuid) / (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id)
+        	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_id = c.id) / (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id)
 	END AS epc,
-	EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - c.created_at)) / 3600 AS hours_lapsed,
-    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - c.created_at)) / 3600 / 24 AS days_lapsed	
+	ROUND(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - c.created_at)) / 3600, 2) AS hours_lapsed,
+    ROUND(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - c.created_at)) / 3600 / 24, 2) AS days_lapsed	
 
 FROM
     campaign c
@@ -108,6 +109,7 @@ LIMIT 10;
 		err := rows.Scan(
 			&res.CampaignUUID,
 			&res.CampaignName,
+			&res.CampaignFlowID,
 			&res.CampaignTrafficSource,
 			&res.CampaignCountry,
 			&res.CampaignCPC,

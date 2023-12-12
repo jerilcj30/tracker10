@@ -1,10 +1,6 @@
 -- drop table demo;
-DROP TABLE IF EXISTS browser;
+DROP TABLE IF EXISTS metric;
 DROP TABLE IF EXISTS conversion;
-DROP TABLE IF EXISTS device;
-DROP TABLE IF EXISTS device_attribute;
-DROP TABLE IF EXISTS geo_location;
-DROP TABLE IF EXISTS os;
 DROP TABLE IF EXISTS traffic_source_token;
 DROP TABLE IF EXISTS lander;
 DROP TABLE IF EXISTS offer;

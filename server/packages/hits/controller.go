@@ -10,6 +10,27 @@ type HitsHandler struct {
 	DB *sql.DB
 }
 
+type UserAgentDetails struct {
+	BrowserName    string
+	BrowserVersion string
+	OS             string
+	OSVersion      string
+	Device         string
+	IsMobile       bool
+	IsTablet       bool
+	IsDesktop      bool
+	IsBot          bool
+	URL            string // URL provided by the bot
+}
+
+type MaxmindGeoLocation struct {
+	PostalCode string
+	City       string
+	State      string
+	Country    string
+	Continent  string
+}
+
 type FlowDetails struct {
 	FlowNodeWeight int
 	FlowNodeURL    string
@@ -29,14 +50,46 @@ func (b HitsHandler) GetHitsHandler(w http.ResponseWriter, r *http.Request) {
 	campaignUuid := r.URL.Query().Get("campaign_id")
 
 	// extract all the tokens from the url excluding campaign_id
-	tokens := make(map[string]string)
-	for key, value := range r.URL.Query() {
-		if key != "campaign_id" {
-			tokens[key] = value[0]
-		}
+
+	tokens, err := extractTokens(r.URL.Query())
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
 	}
 
-	err := insertToDB(context.Background(), b.DB, campaignUuid, tokens)
+	cookie, err := getOrCreateUIDCookie(w, r)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// referrer
+	referrer := r.Referer()
+
+	//useragent strings
+	userAgentDetails, err := processUserAgent(r.UserAgent())
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// maxmind geolocation
+	geoDetails, err := getMaxmindGeoDetails(r.RemoteAddr)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// insert to db
+	err = insertToDB(context.Background(),
+		b.DB,
+		campaignUuid,
+		tokens,
+		cookie,
+		referrer,
+		userAgentDetails,
+		geoDetails,
+	)
 
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -52,6 +105,6 @@ func (b HitsHandler) GetHitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	selectedURL := weightedRandomSelection(result)
 
-	http.Redirect(w, r, selectedURL, http.StatusFound)
+	http.Redirect(w, r, selectedURL+"?"+r.URL.RawQuery, http.StatusFound)
 
 }
