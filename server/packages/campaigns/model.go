@@ -6,7 +6,82 @@ import (
 	"log"
 )
 
+func getCampaignByID(db *sql.DB,
+	id string,
+	from string,
+	to string,
+	value1 string,
+	value2 string,
+	value3 string) ([]CampaignByIdRespose, error) {
+	var res CampaignByIdRespose
+	var newReponse []CampaignByIdRespose
+
+	fmt.Println(from)
+	fmt.Println(to)
+	fmt.Println(value1)
+	fmt.Println(value2)
+	fmt.Println(value3)
+
+	query := `
+	SELECT
+		hit_session_id AS sessions,
+		COUNT(hit_session_id) AS impressions,
+		COUNT(DISTINCT hit_session_id) AS unique_impressions,
+		COUNT(fk_hit_session_id) AS conversions,
+		c.campaign_cpc * COUNT(DISTINCT hit_session_id) AS total_cost,
+		COALESCE(COUNT(fk_hit_session_id) * SUM(conversion_value), 0) AS revenue,
+		COALESCE(COUNT(fk_hit_session_id) * SUM(conversion_value) - (c.campaign_cpc * COUNT(DISTINCT hit_session_id)), 0) AS profit,
+    CASE
+        WHEN (c.campaign_cpc * COUNT(DISTINCT hit_session_id)) <> 0
+        THEN COALESCE((COUNT(fk_hit_session_id) * SUM(conversion_value) - (c.campaign_cpc * COUNT(DISTINCT hit_session_id))) / (c.campaign_cpc * COUNT(DISTINCT hit_session_id)) * 100, 0)
+        ELSE 0
+    END AS ROI,
+    	COALESCE(SUM(conversion_value) / NULLIF(COUNT(fk_hit_session_id), 0), 0) AS EPC
+	FROM
+		hit
+	LEFT JOIN
+		conversion conv ON hit.hit_session_id = conv.fk_hit_session_id
+	JOIN
+		campaign c ON hit.hit_campaign_id = c.id
+	WHERE
+		hit_campaign_id = (SELECT id FROM campaign WHERE campaign_uuid = $1)
+	GROUP BY
+		hit_session_id, campaign_cpc;
+	`
+
+	rows, err := db.Query(query, id)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(
+			&res.Sessions,
+			&res.Impressions,
+			&res.UniqueImpressions,
+			&res.Conversions,
+			&res.TotalCost,
+			&res.Revenue,
+			&res.Profit,
+			&res.ROI,
+			&res.EPC)
+
+		if err != nil {
+			return nil, err
+		}
+
+		// append to slice
+		newReponse = append(newReponse, res)
+	}
+
+	return newReponse, nil
+}
+
 func getCampaignURL(db *sql.DB, campaignID string) (string, error) {
+
 	// http://localhost:4000/campaigns/generatecampaignurl?campaign_id=ptKhRKgMdzt
 	var token string
 
@@ -70,23 +145,23 @@ func getCampaigns(db *sql.DB, from string, to string) ([]Response, error) {
     t.traffic_source_name AS campaign_traffic_source,
     c.campaign_country,
     c.campaign_cpc AS cpc,
-	(SELECT count(id) FROM conversion WHERE conversion_campaign_id = c.id) AS conversions,
+	(SELECT count(id) FROM conversion WHERE fk_campaign_id = c.id) AS conversions,
     (SELECT COUNT(id) FROM hit WHERE hit_campaign_id = c.id) AS impressions,
     (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) AS unique_impressions,	
 	(SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) AS total_cost,
-	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_id = c.id) AS revenue,
-	((SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_id = c.id) - (SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id)) AS profit,
+	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE fk_campaign_id = c.id) AS revenue,
+	((SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE fk_campaign_id = c.id) - (SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id)) AS profit,
 	CASE
         WHEN (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) = 0 THEN 0
-		WHEN (SELECT COUNT(id) FROM conversion WHERE conversion_campaign_id = c.id) =0 THEN 0
+		WHEN (SELECT COUNT(id) FROM conversion WHERE fk_campaign_id = c.id) =0 THEN 0
         ELSE
-            (((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT COUNT(id) * c.campaign_cpc FROM conversion WHERE conversion_campaign_id = c.id)) /
+            (((SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id) - (SELECT COUNT(id) * c.campaign_cpc FROM conversion WHERE fk_campaign_id = c.id)) /
             (SELECT COUNT(DISTINCT hit_session_id) * c.campaign_cpc FROM hit WHERE hit_campaign_id = c.id)) * 100
     END AS roi,
 	CASE
     	WHEN (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id) = 0 THEN 0
     	ELSE
-        	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE conversion_campaign_id = c.id) / (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id)
+        	(SELECT (COUNT(id) * c.campaign_cpc) FROM conversion WHERE fk_campaign_id = c.id) / (SELECT COUNT(DISTINCT hit_session_id) FROM hit WHERE hit_campaign_id = c.id)
 	END AS epc,
 	ROUND(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - c.created_at)) / 3600, 2) AS hours_lapsed,
     ROUND(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - c.created_at)) / 3600 / 24, 2) AS days_lapsed	
@@ -129,8 +204,7 @@ LIMIT 10;
 			return nil, err
 		}
 
-		// calculated fields
-
+		// append to slice
 		newReponse = append(newReponse, res)
 
 	}

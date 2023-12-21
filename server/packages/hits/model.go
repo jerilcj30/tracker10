@@ -89,7 +89,7 @@ func getMaxmindGeoDetails(realIP string) (MaxmindGeoLocation, error) {
 	return geolocation, nil
 }
 
-func weightedRandomSelection(flowDetailsList []FlowDetails) string {
+func weightedRandomSelection(flowDetailsList []FlowDetails) FlowDetails {
 	// Calculate the total weight
 	totalWeight := 0
 	for _, flow := range flowDetailsList {
@@ -104,12 +104,12 @@ func weightedRandomSelection(flowDetailsList []FlowDetails) string {
 	for _, flow := range flowDetailsList {
 		currentWeight += flow.FlowNodeWeight
 		if randomNumber < currentWeight {
-			return flow.FlowNodeURL
+			return flow
 		}
 	}
 
-	// This should not happen if the totalWeight is correctly calculated
-	return ""
+	// returns an empty FlowDetails{} in the event that the total weight is not correctly calculated.
+	return FlowDetails{}
 }
 
 func processRedirection(db *sql.DB, campaignUuid string) ([]FlowDetails, error) {
@@ -117,20 +117,29 @@ func processRedirection(db *sql.DB, campaignUuid string) ([]FlowDetails, error) 
 	var flowDetailsArray []FlowDetails
 
 	query1 := `
-		SELECT    
-		flow.flow_node_weight,
-		CASE
-			WHEN flow.flow_node_type = 'lander' THEN lander.lander_url
-			WHEN flow.flow_node_type = 'offer' THEN offer.offer_url
-		END AS url
-		FROM
-			flow
-		LEFT JOIN
-			lander ON flow.flow_node = lander.id
-		LEFT JOIN
-			offer ON flow.flow_node = offer.id
-		WHERE
-			flow.flow_node_parent = (SELECT campaign_flow FROM campaign WHERE campaign_uuid = $1);
+	SELECT    
+	flow.flow_node_weight,
+	CASE
+		WHEN flow.flow_node_type = 'lander' THEN lander.lander_url
+		WHEN flow.flow_node_type = 'offer' THEN offer.offer_url
+	END AS url,
+	CASE
+		WHEN flow.flow_node_type = 'lander' THEN flow.flow_node_type
+		WHEN flow.flow_node_type = 'offer' THEN flow.flow_node_type
+	END AS node_type,
+	CASE
+	WHEN flow.flow_node_type = 'lander' THEN lander.id
+	WHEN flow.flow_node_type = 'offer' THEN offer.id
+	   END AS node_id
+	FROM
+		flow
+	LEFT JOIN
+		lander ON flow.flow_node = lander.id
+	LEFT JOIN
+		offer ON flow.flow_node = offer.id
+	WHERE
+		flow.flow_node_parent = (SELECT campaign_flow FROM campaign WHERE campaign_uuid = $1);
+
 	`
 
 	rows, err := db.Query(query1, campaignUuid)
@@ -142,7 +151,7 @@ func processRedirection(db *sql.DB, campaignUuid string) ([]FlowDetails, error) 
 	var flowDetails FlowDetails
 
 	for rows.Next() {
-		err := rows.Scan(&flowDetails.FlowNodeWeight, &flowDetails.FlowNodeURL)
+		err := rows.Scan(&flowDetails.FlowNodeWeight, &flowDetails.FlowNodeURL, &flowDetails.FlowNodeType, &flowDetails.FlowNodeID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -171,10 +180,11 @@ func insertToDB(c context.Context,
 	cookie *http.Cookie,
 	referrer string,
 	userAgentDetails UserAgentDetails,
-	geoDetails MaxmindGeoLocation) error {
+	geoDetails MaxmindGeoLocation,
+	selectedPath FlowDetails) error {
 
 	query1 := `
-		SELECT id FROM campaign WHERE campaign_uuid = $1
+		SELECT id, campaign_flow FROM campaign WHERE campaign_uuid = $1
 	`
 
 	query2 := `
@@ -186,14 +196,15 @@ func insertToDB(c context.Context,
 	query3 := `
 		INSERT into hit_query_string(
 			hit_id,
+			campaign_id,
 			hit_query_string_key,
-			hit_query_string_value) VALUES ($1, $2, $3) RETURNING id
+			hit_query_string_value) VALUES ($1, $2, $3, $4) RETURNING id
 		`
 
 	query4 := `
 			INSERT into metric(
-				metrics_hit_id,
-				metrics_campaign_id,
+				fk_hit_id,
+				fk_campaign_id,
 				referrer,
 				browser_name,
 				browser_version,
@@ -209,8 +220,19 @@ func insertToDB(c context.Context,
 				city,
 				state,
 				country,
-				continent) VALUES ($1, $2, $3, $4, $5, $6, $7,
-					$8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id
+				continent, 
+				day_of_week, 
+				hour_of_day) VALUES ($1, $2, $3, $4, $5, $6, $7,
+					$8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING id
+		`
+
+	query5 := `
+			INSERT into visit(
+				visit_hit_id,
+				visit_campaign_id,
+				visit_lander_id,
+				visit_offer_id
+			) VALUES ($1, $2, $3, $4) RETURNING id
 		`
 
 	// transaction
@@ -222,7 +244,8 @@ func insertToDB(c context.Context,
 
 	// first transaction - get the id of the campaign
 	var campaignId int
-	err = tx.QueryRowContext(ctx, query1, campaignUuid).Scan(&campaignId)
+	var flowId int
+	err = tx.QueryRowContext(ctx, query1, campaignUuid).Scan(&campaignId, &flowId)
 
 	if err != nil {
 		// Incase we find any error in the query execution, rollback the transaction
@@ -239,10 +262,10 @@ func insertToDB(c context.Context,
 		return err
 	}
 
-	// third transaction - insert into hit_query_table
+	// third transaction - insert into hit_query_string
 
 	for key, values := range tokens {
-		_, err = tx.ExecContext(ctx, query3, hitId, key, values)
+		_, err = tx.ExecContext(ctx, query3, hitId, campaignId, key, values)
 
 	}
 
@@ -250,8 +273,6 @@ func insertToDB(c context.Context,
 		log.Fatal(err)
 		return err
 	}
-
-	fmt.Println(referrer)
 
 	// fourth transaction - insert into metric table
 	var metricId int
@@ -275,10 +296,44 @@ func insertToDB(c context.Context,
 		geoDetails.City,
 		geoDetails.State,
 		geoDetails.Country,
-		geoDetails.Continent).Scan(&metricId)
+		geoDetails.Continent,
+		//day of the week
+		time.Now().Weekday(),
+		// current hour
+		time.Now().Hour()).Scan(&metricId)
 	if err != nil {
 		log.Fatal(err)
 		return err
+	}
+
+	// fifth transaction
+	var visitId int
+	switch selectedPath.FlowNodeType {
+	case "lander":
+		err = tx.QueryRowContext(
+			ctx,
+			query5,
+			hitId,
+			campaignId,
+			selectedPath.FlowNodeID,
+			nil).Scan(&visitId)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+
+	case "offer":
+		err = tx.QueryRowContext(
+			ctx,
+			query5,
+			hitId,
+			campaignId,
+			nil,
+			selectedPath.FlowNodeID).Scan(&visitId)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
 	}
 
 	// Commit the transaction if there are no errors

@@ -77,25 +77,27 @@ CREATE TABLE "hit" (
 CREATE TABLE "hit_query_string" (
   "id" bigserial PRIMARY KEY,
   "hit_id" bigint,
+  "campaign_id" bigint,
   "hit_query_string_key" varchar NOT NULL,
   "hit_query_string_value" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "created_date" date NOT NULL DEFAULT (now())
 );
 
-CREATE TABLE "conversion" (
+CREATE TABLE "visit" (
   "id" bigserial PRIMARY KEY,
-  "conversion_value" bigint NOT NULL,
-  "conversion_campaign_id" bigint,
-  "conversion_hit_id" bigint,
+  "visit_hit_id" bigint,
+  "visit_campaign_id" bigint,
+  "visit_lander_id" bigint,
+  "visit_offer_id" bigint,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "created_date" date NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "metric" (
   "id" bigserial PRIMARY KEY,
-  "metrics_hit_id" bigint,
-  "metrics_campaign_id" bigint,
+  "fk_hit_id" bigint,
+  "fk_campaign_id" bigint,
   "referrer" varchar,
   "browser_name" varchar,
   "browser_version" varchar,
@@ -112,6 +114,17 @@ CREATE TABLE "metric" (
   "state" varchar,
   "country" varchar,
   "continent" varchar,
+  "day_of_week" varchar,
+  "hour_of_day" bigint,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "created_date" date NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "conversion" (
+  "id" bigserial PRIMARY KEY,
+  "conversion_value" bigint NOT NULL,
+  "fk_campaign_id" bigint,
+  "fk_hit_session_id" varchar,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "created_date" date NOT NULL DEFAULT (now())
 );
@@ -128,10 +141,18 @@ ALTER TABLE "hit" ADD FOREIGN KEY ("hit_campaign_id") REFERENCES "campaign" ("id
 
 ALTER TABLE "hit_query_string" ADD FOREIGN KEY ("hit_id") REFERENCES "hit" ("id");
 
-ALTER TABLE "conversion" ADD FOREIGN KEY ("conversion_campaign_id") REFERENCES "campaign" ("id");
+ALTER TABLE "hit_query_string" ADD FOREIGN KEY ("campaign_id") REFERENCES "campaign" ("id");
 
-ALTER TABLE "conversion" ADD FOREIGN KEY ("conversion_hit_id") REFERENCES "hit" ("id");
+ALTER TABLE "visit" ADD FOREIGN KEY ("visit_hit_id") REFERENCES "hit" ("id");
 
-ALTER TABLE "metric" ADD FOREIGN KEY ("metrics_hit_id") REFERENCES "hit" ("id");
+ALTER TABLE "visit" ADD FOREIGN KEY ("visit_campaign_id") REFERENCES "campaign" ("id");
 
-ALTER TABLE "metric" ADD FOREIGN KEY ("metrics_campaign_id") REFERENCES "campaign" ("id");
+ALTER TABLE "visit" ADD FOREIGN KEY ("visit_lander_id") REFERENCES "lander" ("id");
+
+ALTER TABLE "visit" ADD FOREIGN KEY ("visit_offer_id") REFERENCES "offer" ("id");
+
+ALTER TABLE "metric" ADD FOREIGN KEY ("fk_hit_id") REFERENCES "hit" ("id");
+
+ALTER TABLE "metric" ADD FOREIGN KEY ("fk_campaign_id") REFERENCES "campaign" ("id");
+
+ALTER TABLE "conversion" ADD FOREIGN KEY ("fk_campaign_id") REFERENCES "campaign" ("id");

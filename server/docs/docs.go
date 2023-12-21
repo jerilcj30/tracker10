@@ -150,7 +150,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad requesr",
+                        "description": "Bad request",
                         "schema": {
                             "type": "string"
                         }
@@ -239,6 +239,69 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad requesr",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/campaigns/{id}": {
+            "get": {
+                "description": "Get the traffic/hit details of a specific campaign",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Get the traffic/hit details of a specific campaign",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Campaign ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "yyyy-MM-dd",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "yyyy-MM-dd",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of hits",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/campaigns.Response"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
                         "schema": {
                             "type": "string"
                         }
@@ -705,6 +768,7 @@ const docTemplate = `{
                 "CampaignCountry",
                 "CampaignDaysLapsed",
                 "CampaignEPC",
+                "CampaignFlowID",
                 "CampaignHoursLapsed",
                 "CampaignImpressions",
                 "CampaignName",
@@ -731,6 +795,9 @@ const docTemplate = `{
                 },
                 "CampaignEPC": {
                     "type": "integer"
+                },
+                "CampaignFlowID": {
+                    "type": "string"
                 },
                 "CampaignHoursLapsed": {
                     "type": "number"

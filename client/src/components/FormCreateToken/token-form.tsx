@@ -103,6 +103,8 @@ export function TokenForm() {
     queryKey: ["trafficSourceNames"],
     queryFn: getTrafficSourceNames,
   });
+
+  console.log(trafficSourceNames.data)
  
 
   function onSubmit(data: z.infer<typeof FormSchema>) {

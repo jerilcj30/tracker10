@@ -3,11 +3,29 @@ package campaigns
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type CampaignsHandler struct {
 	DB *sql.DB
+}
+
+type CampaignByIdRespose struct {
+	Group1            string  `json:"Group1"`
+	Group2            string  `json:"Group2" `
+	Group3            string  `json:"Group3" `
+	Sessions          string  `json:"Sessions"`
+	Impressions       int     `json:"Impressions" validate:"required"`
+	UniqueImpressions int     `json:"UniqueImpressions" validate:"required"`
+	Conversions       int     `json:"Conversions" validate:"required"`
+	TotalCost         int     `json:"TotalCost" validate:"required"`
+	Revenue           float64 `json:"Revenue" validate:"required"`
+	Profit            float64 `json:"Profit" validate:"required"`
+	ROI               float64 `json:"ROI" validate:"required"`
+	EPC               float64 `json:"EPC" validate:"required"`
 }
 
 // structure of the data requested from the client/browser
@@ -71,16 +89,17 @@ func (b CampaignsHandler) GetCampaignURLHandler(w http.ResponseWriter, r *http.R
 
 // GET Campaigns
 // @tags Campaigns
-// @Summary Get the list of all campaigns
-// @Description Get the list of all campaigns
+// @Summary Get the traffic/hit details of a specific campaign
+// @Description Get the traffic/hit details of a specific campaign
 // @Accept  json
 // @Produce  json
+// @Param id path string true "Campaign ID"
 // @Param from query string true "Start date (YYYY-MM-DD)" Format(yyyy-MM-dd)
 // @Param to query string true "End date (YYYY-MM-DD)" Format(yyyy-MM-dd)
-// @Success 200 {array} Response "List of campaigns"
+// @Success 200 {array} Response "List of hits"
 // @Failure 400 {string} Response "Bad request"
 // @Failure 500 {string} Response "Internal server error"
-// @Router /campaigns  [get]
+// @Router /campaigns/{id}  [get]
 func (b CampaignsHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	from := r.URL.Query().Get("from")
@@ -99,6 +118,43 @@ func (b CampaignsHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+// GET Campaigns
+// @tags Campaigns
+// @Summary Get the list of all campaigns
+// @Description Get the list of all campaigns
+// @Accept  json
+// @Produce  json
+// @Param from query string true "Start date (YYYY-MM-DD)" Format(yyyy-MM-dd)
+// @Param to query string true "End date (YYYY-MM-DD)" Format(yyyy-MM-dd)
+// @Success 200 {array} Response "List of campaigns"
+// @Failure 400 {string} Response "Bad request"
+// @Failure 500 {string} Response "Internal server error"
+// @Router /campaigns  [get]
+func (b CampaignsHandler) GetByIdHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	fmt.Println("hello")
+	from := r.URL.Query().Get("from")
+	to := r.URL.Query().Get("to")
+
+	value1 := r.URL.Query().Get("value1")
+	value2 := r.URL.Query().Get("value2")
+	value3 := r.URL.Query().Get("value3")
+
+	results, err := getCampaignByID(b.DB, id, from, to, value1, value2, value3)
+	fmt.Println("results", results)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(results)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
 }
 
 // POST Campaigns

@@ -12,8 +12,10 @@ import (
 
 	affiliatenetworks "github.com/jerilcj30/tracker10/packages/affiliateNetworks"
 	campaigns "github.com/jerilcj30/tracker10/packages/campaigns"
+	clicks "github.com/jerilcj30/tracker10/packages/clicks"
 	demo "github.com/jerilcj30/tracker10/packages/demos"
 	"github.com/jerilcj30/tracker10/packages/flows"
+	"github.com/jerilcj30/tracker10/packages/groupings"
 	"github.com/jerilcj30/tracker10/packages/hits"
 	"github.com/jerilcj30/tracker10/packages/landers"
 	"github.com/jerilcj30/tracker10/packages/offers"
@@ -113,8 +115,25 @@ func main() {
 	// hits routes
 	r.Mount("/hits", HitsRoutes(db))
 
+	// clicks routes
+	r.Mount("/clicks", ClicksRoutes(db))
+
+	r.Mount("/groupings", GroupingsRoutes(db))
+
 	http.ListenAndServe(config.ServerAddress, r)
 
+}
+
+func GroupingsRoutes(db *sql.DB) chi.Router {
+	r := chi.NewRouter()
+
+	groupingsHandler := groupings.GroupingsHandler{
+		DB: db,
+	}
+
+	r.Get("/", groupingsHandler.GetHandler)
+
+	return r
 }
 
 func CampaignsRoutes(db *sql.DB) chi.Router {
@@ -124,9 +143,11 @@ func CampaignsRoutes(db *sql.DB) chi.Router {
 		DB: db,
 	}
 
+	r.Get("/{id}/", campaignsHandler.GetByIdHandler)
 	r.Get("/", campaignsHandler.GetHandler)
 	r.Get("/generatecampaignurl", campaignsHandler.GetCampaignURLHandler)
 	r.Post("/", campaignsHandler.PostHandler)
+
 	return r
 }
 
@@ -212,6 +233,17 @@ func HitsRoutes(db *sql.DB) chi.Router {
 
 	r.Get("/", hitsHandler.GetHitsHandler)
 
+	return r
+}
+
+func ClicksRoutes(db *sql.DB) chi.Router {
+	r := chi.NewRouter()
+
+	clicksHandler := clicks.ClicksHandler{
+		DB: db,
+	}
+
+	r.Get("/", clicksHandler.GetHandler)
 	return r
 }
 

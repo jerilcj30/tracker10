@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import FlowTree from '../TreeCreateFlow/tree';
-import { useTreeStore } from '../../store/storeFlows';
+import { useTreeStore } from '../../store/store';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { TreeSchema } from '../TreeCreateFlow/tree';

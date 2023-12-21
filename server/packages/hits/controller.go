@@ -3,6 +3,7 @@ package hits
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 )
 
@@ -34,6 +35,8 @@ type MaxmindGeoLocation struct {
 type FlowDetails struct {
 	FlowNodeWeight int
 	FlowNodeURL    string
+	FlowNodeType   string
+	FlowNodeID     int
 }
 
 func (b HitsHandler) GetHitsHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +83,18 @@ func (b HitsHandler) GetHitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// select all the first children of flow
+	flowChildren, err := processRedirection(b.DB, campaignUuid)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// select a random child and it's url considering the weight of each child
+	// this is the path which the weightedRandomSelection has randomly selected
+	selectedPath := weightedRandomSelection(flowChildren)
+	fmt.Println(selectedPath)
+
 	// insert to db
 	err = insertToDB(context.Background(),
 		b.DB,
@@ -89,22 +104,13 @@ func (b HitsHandler) GetHitsHandler(w http.ResponseWriter, r *http.Request) {
 		referrer,
 		userAgentDetails,
 		geoDetails,
-	)
-
+		selectedPath)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 
-	result, err := processRedirection(b.DB, campaignUuid)
-
-	if err != nil {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
-		return
-	}
-
-	selectedURL := weightedRandomSelection(result)
-
-	http.Redirect(w, r, selectedURL+"?"+r.URL.RawQuery, http.StatusFound)
+	// initial redirect
+	http.Redirect(w, r, selectedPath.FlowNodeURL+"?"+"cid="+cookie.Value+"&"+r.URL.RawQuery, http.StatusFound)
 
 }

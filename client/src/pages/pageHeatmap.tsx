@@ -57,7 +57,7 @@ export default function Heatmap() {
         </div>
 
         <div>
-          <DataTable columns={columns} data={data.message} />
+          <DataTable columns={columns} data={data || []} />
         </div>
         <div>
           <OrgChartTree />

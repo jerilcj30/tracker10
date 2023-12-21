@@ -15,8 +15,27 @@ export async function getcampaignURL(campaignUUID: string) {
       // }
     );
 
+   
+
     return data;
   } catch (error) {
+    console.log('Error in API');
+  }
+}
+
+export async function getCampaign(id: string, startDate: any, endDate: any, value1: string, value2: string, value3: string) {
+  try {
+    const { data } = await axios.get(
+      `http://localhost:4000/campaigns/${id}/?from=${startDate}&to=${endDate}&value1=${value1}&value2=${value2}&value3=${value3}`
+      // {
+      //   headers: {
+      //     'X-API-Key': '7d9e3c30',
+      //   },
+      // }
+    );
+
+    return data;
+  } catch (error) {    
     console.log('Error in API');
   }
 }

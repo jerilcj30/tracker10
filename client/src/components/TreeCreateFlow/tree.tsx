@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Tree from "react-d3-tree";
 import { TreeDialog } from "./treeDialog";
 import { RawNodeDatum, TreeNodeDatum} from '../../../node_modules/react-d3-tree/lib/types/types/common'
-import { useTreeStore } from '../../store/storeFlows';
+import { useTreeStore } from '../../store/store';
 import { nanoid } from 'nanoid'
 
 export interface TreeSchema {
