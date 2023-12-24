@@ -3,7 +3,6 @@ package campaigns
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -21,7 +20,7 @@ type CampaignByIdRespose struct {
 	Impressions       int     `json:"Impressions" validate:"required"`
 	UniqueImpressions int     `json:"UniqueImpressions" validate:"required"`
 	Conversions       int     `json:"Conversions" validate:"required"`
-	TotalCost         int     `json:"TotalCost" validate:"required"`
+	TotalCost         float64 `json:"TotalCost" validate:"required"`
 	Revenue           float64 `json:"Revenue" validate:"required"`
 	Profit            float64 `json:"Profit" validate:"required"`
 	ROI               float64 `json:"ROI" validate:"required"`
@@ -135,7 +134,6 @@ func (b CampaignsHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 func (b CampaignsHandler) GetByIdHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	fmt.Println("hello")
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
 
@@ -144,7 +142,6 @@ func (b CampaignsHandler) GetByIdHandler(w http.ResponseWriter, r *http.Request)
 	value3 := r.URL.Query().Get("value3")
 
 	results, err := getCampaignByID(b.DB, id, from, to, value1, value2, value3)
-	fmt.Println("results", results)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return

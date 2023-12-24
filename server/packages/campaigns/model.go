@@ -4,7 +4,24 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 )
+
+func extractToken(tokenString string) (string, error) {
+	// Define a regular expression to match "Token: <word>"
+	re := regexp.MustCompile(`Token: (\w+)`)
+
+	// Find the match in the input string
+	match := re.FindStringSubmatch(tokenString)
+
+	// Check if a match is found
+	if len(match) >= 2 {
+		return match[1], nil // Return the captured word
+	}
+
+	return "", fmt.Errorf("no match found in the input string")
+}
 
 func getCampaignByID(db *sql.DB,
 	id string,
@@ -14,70 +31,250 @@ func getCampaignByID(db *sql.DB,
 	value2 string,
 	value3 string) ([]CampaignByIdRespose, error) {
 	var res CampaignByIdRespose
-	var newReponse []CampaignByIdRespose
+	var newResponse []CampaignByIdRespose
 
-	fmt.Println(from)
-	fmt.Println(to)
-	fmt.Println(value1)
-	fmt.Println(value2)
-	fmt.Println(value3)
+	// fmt.Println(from)
+	// fmt.Println(to)
+	// fmt.Println(value1)
+	// fmt.Println(value2)
+	// fmt.Println(value3)
 
-	query := `
-	SELECT
-		hit_session_id AS sessions,
-		COUNT(hit_session_id) AS impressions,
-		COUNT(DISTINCT hit_session_id) AS unique_impressions,
-		COUNT(fk_hit_session_id) AS conversions,
-		c.campaign_cpc * COUNT(DISTINCT hit_session_id) AS total_cost,
-		COALESCE(COUNT(fk_hit_session_id) * SUM(conversion_value), 0) AS revenue,
-		COALESCE(COUNT(fk_hit_session_id) * SUM(conversion_value) - (c.campaign_cpc * COUNT(DISTINCT hit_session_id)), 0) AS profit,
-    CASE
-        WHEN (c.campaign_cpc * COUNT(DISTINCT hit_session_id)) <> 0
-        THEN COALESCE((COUNT(fk_hit_session_id) * SUM(conversion_value) - (c.campaign_cpc * COUNT(DISTINCT hit_session_id))) / (c.campaign_cpc * COUNT(DISTINCT hit_session_id)) * 100, 0)
-        ELSE 0
-    END AS ROI,
-    	COALESCE(SUM(conversion_value) / NULLIF(COUNT(fk_hit_session_id), 0), 0) AS EPC
-	FROM
-		hit
-	LEFT JOIN
-		conversion conv ON hit.hit_session_id = conv.fk_hit_session_id
-	JOIN
-		campaign c ON hit.hit_campaign_id = c.id
-	WHERE
-		hit_campaign_id = (SELECT id FROM campaign WHERE campaign_uuid = $1)
-	GROUP BY
-		hit_session_id, campaign_cpc;
-	`
+	if value1 == "undefined" && value2 == "undefined" && value3 == "undefined" {
+		query := `SELECT			
+				hit_session_id AS sessions,
+				COUNT(hit_session_id) AS impressions,
+				COUNT(DISTINCT hit_session_id) AS unique_impressions,
+				COUNT(fk_hit_session_id) AS conversions,
+				c.campaign_cpc * COUNT(DISTINCT hit_session_id) AS total_cost,
+				COALESCE(COUNT(fk_hit_session_id) * SUM(conversion_value), 0) AS revenue,
+				COALESCE(COUNT(fk_hit_session_id) * SUM(conversion_value) - (c.campaign_cpc * COUNT(DISTINCT hit_session_id)), 0) AS profit,
+			CASE
+				WHEN (c.campaign_cpc * COUNT(DISTINCT hit_session_id)) <> 0
+				THEN COALESCE((COUNT(fk_hit_session_id) * SUM(conversion_value) - (c.campaign_cpc * COUNT(DISTINCT hit_session_id))) / (c.campaign_cpc * COUNT(DISTINCT hit_session_id)) * 100, 0)
+				ELSE 0
+			END AS ROI,
+				COALESCE(SUM(conversion_value) / NULLIF(COUNT(fk_hit_session_id), 0), 0) AS EPC
+			FROM
+				hit
+			LEFT JOIN 
+				conversion conv ON hit.hit_session_id = conv.fk_hit_session_id
+			JOIN
+				campaign c ON hit.hit_campaign_id = c.id
+			WHERE
+				hit_campaign_id = (SELECT id FROM campaign WHERE campaign_uuid = $1)
+			GROUP BY
+				hit_session_id, campaign_cpc;
+			`
 
-	rows, err := db.Query(query, id)
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err := rows.Scan(
-			&res.Sessions,
-			&res.Impressions,
-			&res.UniqueImpressions,
-			&res.Conversions,
-			&res.TotalCost,
-			&res.Revenue,
-			&res.Profit,
-			&res.ROI,
-			&res.EPC)
+		rows, err := db.Query(query, id)
 
 		if err != nil {
+			log.Println(err)
 			return nil, err
 		}
+		defer rows.Close()
 
-		// append to slice
-		newReponse = append(newReponse, res)
+		for rows.Next() {
+			err := rows.Scan(
+				&res.Sessions,
+				&res.Impressions,
+				&res.UniqueImpressions,
+				&res.Conversions,
+				&res.TotalCost,
+				&res.Revenue,
+				&res.Profit,
+				&res.ROI,
+				&res.EPC)
+
+			if err != nil {
+				return nil, err
+			}
+
+			// append to slice
+			newResponse = append(newResponse, res)
+		}
+	} else {
+
+		// if any of the drop down options are selected, then this block of code will be executed
+
+		query := "SELECT"
+
+		if value1 != "undefined" && value2 == "undefined" && value3 == "undefined" {
+			query += " " + value1 + ","
+
+			/*
+				if strings.Contains(value1, "Token") {
+					token, err := extractToken(value1)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+				} */
+
+		}
+
+		if value1 == "undefined" && value2 != "undefined" && value3 == "undefined" {
+			query += " " + value2 + ","
+		}
+
+		if value1 == "undefined" && value2 == "undefined" && value3 != "undefined" {
+			query += " " + value3 + ","
+		}
+
+		if value1 != "undefined" && value2 != "undefined" && value3 == "undefined" {
+			query += " " + value1 + ","
+			query += " " + value2 + ","
+		}
+
+		if value1 != "undefined" && value2 != "undefined" && value3 != "undefined" {
+			query += " " + value1 + ","
+			query += " " + value2 + ","
+			query += " " + value3 + ","
+		}
+
+		query += `COUNT(h.hit_session_id) AS impressions,
+				COUNT(DISTINCT h.hit_session_id) AS unique_impressions,
+				COUNT(conv.fk_hit_session_id) AS conversions,
+				AVG(c.campaign_cpc) * COUNT(DISTINCT h.hit_session_id) AS total_cost,
+				COALESCE(COUNT(conv.fk_hit_session_id) * SUM(conv.conversion_value), 0) AS revenue,
+				COALESCE(COUNT(conv.fk_hit_session_id) * SUM(conversion_value) - (AVG(c.campaign_cpc) * COUNT(DISTINCT h.hit_session_id)), 0) AS profit,
+			CASE
+				WHEN (AVG(c.campaign_cpc) * COUNT(DISTINCT h.hit_session_id)) <> 0
+				THEN COALESCE((COUNT(conv.fk_hit_session_id) * SUM(conv.conversion_value) - (AVG(c.campaign_cpc) * COUNT(DISTINCT h.hit_session_id))) / (AVG(c.campaign_cpc) * COUNT(DISTINCT h.hit_session_id)) * 100, 0)
+				ELSE 0
+			END AS ROI,
+				COALESCE(SUM(conv.conversion_value) / NULLIF(COUNT(conv.fk_hit_session_id), 0), 0) AS EPC
+			FROM metric
+			LEFT JOIN 
+				hit h ON metric.fk_hit_id = h.id
+			LEFT JOIN 
+				conversion conv on conv.fk_hit_session_id = h.hit_session_id
+			LEFT JOIN 
+				campaign c on h.hit_campaign_id =  c.id
+			WHERE
+				metric.fk_campaign_id = (SELECT id FROM campaign WHERE campaign_uuid = $1)`
+
+		query += " GROUP BY"
+
+		if value1 != "undefined" {
+			query += " " + value1 + ","
+		}
+
+		if value2 != "undefined" {
+			query += " " + value2 + ","
+		}
+
+		if value3 != "undefined" {
+			query += " " + value3 + ","
+		}
+
+		// Remove the trailing comma, if any
+		query = strings.TrimSuffix(query, ",")
+
+		rows, err := db.Query(query, id)
+
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			switch {
+			case value1 != "undefined" && value2 != "undefined" && value3 != "undefined":
+				err = rows.Scan(
+					&res.Group1,
+					&res.Group2,
+					&res.Group3,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			case value1 != "undefined" && value2 != "undefined":
+				err = rows.Scan(
+					&res.Group1,
+					&res.Group2,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			case value1 != "undefined" && value3 != "undefined":
+				err = rows.Scan(
+					&res.Group1,
+					&res.Group3,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			case value2 != "undefined" && value3 != "undefined":
+				err = rows.Scan(
+					&res.Group2,
+					&res.Group3,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			case value1 != "undefined":
+				err = rows.Scan(
+					&res.Group1,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			case value2 != "undefined":
+				err = rows.Scan(
+					&res.Group2,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			case value3 != "undefined":
+				err = rows.Scan(
+					&res.Group3,
+					&res.Impressions,
+					&res.UniqueImpressions,
+					&res.Conversions,
+					&res.TotalCost,
+					&res.Revenue,
+					&res.Profit,
+					&res.ROI,
+					&res.EPC)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			// append to slice
+			newResponse = append(newResponse, res)
+		}
 	}
 
-	return newReponse, nil
+	return newResponse, nil
 }
 
 func getCampaignURL(db *sql.DB, campaignID string) (string, error) {
