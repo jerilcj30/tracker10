@@ -23,6 +23,26 @@ func extractToken(tokenString string) (string, error) {
 	return "", fmt.Errorf("no match found in the input string")
 }
 
+func processValue(value string) (bool, string, error) {
+	isToken := false
+
+	if value == "undefined" {
+		return false, "", nil
+	}
+
+	if strings.Contains(value, "Token") {
+		isToken = true
+		token, err := extractToken(value)
+		if err != nil {
+			fmt.Println(err)
+			return isToken, "", err
+		}
+		return isToken, token, nil
+	}
+
+	return isToken, value, nil
+}
+
 func getCampaignByID(db *sql.DB,
 	id string,
 	from string,
@@ -99,37 +119,23 @@ func getCampaignByID(db *sql.DB,
 
 		query := "SELECT"
 
-		if value1 != "undefined" && value2 == "undefined" && value3 == "undefined" {
-			query += " " + value1 + ","
+		// Process each value and append it to the query
+		for _, v := range []string{value1, value2, value3} {
 
-			/*
-				if strings.Contains(value1, "Token") {
-					token, err := extractToken(value1)
-					if err != nil {
-						fmt.Println(err)
-					}
+			isToken, processedValue, err := processValue(v)
 
-				} */
+			if err != nil {
+				return nil, err
+			}
 
-		}
+			fmt.Println(processedValue)
 
-		if value1 == "undefined" && value2 != "undefined" && value3 == "undefined" {
-			query += " " + value2 + ","
-		}
-
-		if value1 == "undefined" && value2 == "undefined" && value3 != "undefined" {
-			query += " " + value3 + ","
-		}
-
-		if value1 != "undefined" && value2 != "undefined" && value3 == "undefined" {
-			query += " " + value1 + ","
-			query += " " + value2 + ","
-		}
-
-		if value1 != "undefined" && value2 != "undefined" && value3 != "undefined" {
-			query += " " + value1 + ","
-			query += " " + value2 + ","
-			query += " " + value3 + ","
+			if processedValue != "" && isToken {
+				query += " " + "hqs.hit_query_string_value AS" + " " + processedValue + ","
+			}
+			if processedValue != "" && !isToken {
+				query += " " + processedValue + ","
+			}
 		}
 
 		query += `COUNT(h.hit_session_id) AS impressions,
@@ -151,27 +157,47 @@ func getCampaignByID(db *sql.DB,
 				conversion conv on conv.fk_hit_session_id = h.hit_session_id
 			LEFT JOIN 
 				campaign c on h.hit_campaign_id =  c.id
+			LEFT JOIN
+				hit_query_string hqs ON h.hit_campaign_id = hqs.hit_id`
+
+		query += `
 			WHERE
 				metric.fk_campaign_id = (SELECT id FROM campaign WHERE campaign_uuid = $1)`
 
-		query += " GROUP BY"
+		// Process each value and append it to the WHERE clause
+		for _, v := range []string{value1, value2, value3} {
+			isToken, processedValue, err := processValue(v)
+			if err != nil {
+				return nil, err
+			}
 
-		if value1 != "undefined" {
-			query += " " + value1 + ","
+			if processedValue != "" && isToken {
+				query += " AND hqs.hit_query_string_key = '" + processedValue + "' "
+			}
 		}
 
-		if value2 != "undefined" {
-			query += " " + value2 + ","
-		}
+		query += "GROUP BY"
 
-		if value3 != "undefined" {
-			query += " " + value3 + ","
-		}
+		// Process each value and append it to the GROUP BY clause
+		for _, v := range []string{value1, value2, value3} {
+			isToken, processedValue, err := processValue(v)
+			if err != nil {
+				return nil, err
+			}
+			if processedValue != "" && !isToken {
+				query += " " + processedValue + ","
+			}
 
+			if processedValue != "" && isToken {
+				query += " " + "hqs.hit_query_string_value" + ","
+			}
+		}
 		// Remove the trailing comma, if any
 		query = strings.TrimSuffix(query, ",")
 
 		rows, err := db.Query(query, id)
+
+		fmt.Println(query)
 
 		if err != nil {
 			log.Println(err)
